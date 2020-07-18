@@ -118,56 +118,53 @@ def check_permissions(permission, payload):
 def verify_decode_jwt(token):
     jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
     jwks = json.loads(jsonurl.read())
-    unverified_header = jwt.get_unverified_header(token)
-    rsa_key = {}
-    if 'kid' not in unverified_header:
+    unverifiedHeader = jwt.get_unverified_header(token)
+    if 'kid' not in unverifiedHeader:
         raise AuthError({
-            'code': 'invalid_header',
-            'description': 'Authorization malformed.'
-        }, 401)
-
+           'code':'Invalid Header',
+           'description':'Authorization malformed'
+        },401)        
+    
+    rsa_key={}
     for key in jwks['keys']:
-        if key['kid'] == unverified_header['kid']:
-            rsa_key = {
-                'kty': key['kty'],
-                'kid': key['kid'],
-                'use': key['use'],
-                'n': key['n'],
-                'e': key['e']
+       if key['kid'] == unverifiedHeader['kid']:
+            rsa_key={
+               'alg':key['alg'],
+               'kty':key['kty'],
+               'use':key['use'],
+               'kid':key['kid'],
+               'n':key['n'],
+               'e':key['e']    
             }
     if rsa_key:
         try:
             payload = jwt.decode(
-                token,
-                rsa_key,
+                token ,
+                rsa_key ,
                 algorithms=ALGORITHMS,
                 audience=API_AUDIENCE,
-                issuer='https://' + AUTH0_DOMAIN + '/'
+                issuer='https://'+AUTH0_DOMAIN+'/'
             )
-
             return payload
-
-        except jwt.ExpiredSignatureError:
+        except jwt.ExpiredSignatureError :
             raise AuthError({
-                'code': 'token_expired',
-                'description': 'Token expired.'
+                'code':'token_expired',
+                'description':'Token expired.'
             }, 401)
-
         except jwt.JWTClaimsError:
             raise AuthError({
-                'code': 'invalid_claims',
-                'description': 'Incorrect claims. Please, check the audience and issuer.'
-            }, 401)
+                'code':'invalid_claims',
+                'description':'Incorrect claims check the audiance and issuer'
+            } , 401)
         except Exception:
             raise AuthError({
-                'code': 'invalid_header',
-                'description': 'Unable to parse authentication token.'
-            }, 400)
+                'code':'Invalid header',
+                'description':'Unable to parse autherication token'
+            },400)   
     raise AuthError({
-        'code': 'invalid_header',
-        'description': 'Unable to find the appropriate key.'
-    }, 400)
-
+        'code':'Invalid Header',
+        'description':'Unable to find the appropriate key'
+    },400)      
 
 '''
 @TODO implement @requires_auth(permission) decorator method
