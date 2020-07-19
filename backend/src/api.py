@@ -57,7 +57,8 @@ def get_drinks_detail(*args, **kwargs):
             "success": True,
             "drinks": drinks
         })
-    except:
+    except Exception:
+        print(Exception)
         abort(500)
 
 
@@ -85,6 +86,7 @@ def post_drink(*args, **kwargs):
             'drinks': drink_to_post.long()
         })
     except Exception:
+        print(Exception)
         abort(422)
 
 
@@ -125,10 +127,12 @@ def patch_drinks(payload, id):
             "drinks": [drink.long()]
         })
     except Exception:
+        print(Exception)
         abort(422)
 
 
 @app.route('/drinks/<int:id>', methods=['DELETE'])
+@requires_auth('delete:drinks')
 def delete_drink(*args, **kwargs):
     '''
         DELETE /drinks/<id>
@@ -153,7 +157,8 @@ def delete_drink(*args, **kwargs):
             "success": True,
             "delete": drink_id
         })
-    except:
+    except Exception:
+        print(Exception)
         abort(422)
 
 
