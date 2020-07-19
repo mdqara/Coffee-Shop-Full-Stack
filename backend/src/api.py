@@ -32,12 +32,15 @@ def get_drinks(*args, **kwargs):
         or appropriate status code indicating reason for failure
     '''
     try:
-        drinks = list(map(Drink.short, Drink.query.all()))
+        drinks = Drink.query.all()
+        print(drinks)
+        drinks_list = [d.short() for d in drinks]
         return jsonify({
             "success": True,
-            "drinks": drinks
+            "drinks": drinks_list
         })
-    except:
+    except Exception:
+        print(Exception)
         abort(500)
 
 
@@ -133,7 +136,7 @@ def patch_drinks(payload, id):
 
 @app.route('/drinks/<int:id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
-def delete_drink(*args, **kwargs):
+def delete_drink(payload, id):
     '''
         DELETE /drinks/<id>
             where <id> is the existing model id
@@ -144,25 +147,29 @@ def delete_drink(*args, **kwargs):
             or appropriate status code indicating reason for failure
     '''
 
-    drink_id = kwargs.get("drink_id", None)
-    if drink_id is None:
-        abort(400)
-
-    drink = Drink.query(drink_id)
+    drink = Drink.query.get(id)
     if drink is None:
-        abort(404)
+        abort(404)  # drink not found
+
     try:
         drink.delete()
         return jsonify({
             "success": True,
-            "delete": drink_id
-        })
-    except Exception:
-        print(Exception)
-        abort(422)
-
+            "delete": id
+        }), 200
+    except BaseException:
+        abort(500)
 
 # Error Handling
+
+
+@app.errorhandler(AuthError)
+def handle_auth_error(ex):
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
+
+
 @app.errorhandler(422)
 def unprocessable(error):
     try:
@@ -171,7 +178,7 @@ def unprocessable(error):
             "error": 422,
             "message": "Unprocessable Entity"
         }), 422
-    except:
+    except BaseException:
         abort(500)
 
 
