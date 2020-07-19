@@ -9,14 +9,13 @@ AUTH0_DOMAIN = 'dev-ypnvxc34.us.auth0.com'
 ALGORITHMS = ['RS256']
 API_AUDIENCE = 'Coffee'
 
-# AuthError Exception
-'''
-AuthError Exception
-A standardized way to communicate auth failure modes
-'''
-
 
 class AuthError(Exception):
+    '''
+    AuthError Exception
+    A standardized way to communicate auth failure modes
+    '''
+
     def __init__(self, error, status_code):
         self.error = error
         self.status_code = status_code
@@ -24,13 +23,8 @@ class AuthError(Exception):
 
 # Auth Header
 def get_token_auth_header():
-    '''
-    get_token_auth_header() method is trying to get the header from the request
-    it raise an AuthError if no header is present,
-    it attempt to split bearer and the token,
-    it raise an AuthError if the header is malformed,
-    return the token part of the header
-    '''
+    """Obtains the Access Token from the Authorization Header
+    """
     auth = request.headers.get('Authorization', None)
     if not auth:
         raise AuthError({
@@ -39,6 +33,7 @@ def get_token_auth_header():
         }, 401)
 
     parts = auth.split()
+
     if parts[0].lower() != 'bearer':
         raise AuthError({
             'code': 'invalid_header',
@@ -100,23 +95,19 @@ def check_permissions(permission, payload):
     return True
 
 
-'''
-@TODO implement verify_decode_jwt(token) method
+def verify_decode_jwt(token):
+    '''
+    verify_decode_jwt(token) method
     @INPUTS
         token: a json web token (string)
-
-    it should be an Auth0 token with key id (kid)
-    it should verify the token using Auth0 /.well-known/jwks.json
-    it should decode the payload from the token
-    it should validate the claims
+    Auth0 token with key id (kid)
+    verify the token using Auth0 /.well-known/jwks.json
+    should decode the payload from the token
+    should validate the claims
     return the decoded payload
+    '''
 
-    !!NOTE urlopen has a common certificate error described here: https://stackoverflow.com/questions/50236117/scraping-ssl-certificate-verify-failed-error-for-http-en-wikipedia-org
-'''
-
-
-def verify_decode_jwt(token):
-    jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
+    jsonurl = urlopen("https://" + AUTH0_DOMAIN + "/.well-known/jwks.json")
     jwks = json.loads(jsonurl.read())
     unverified_header = jwt.get_unverified_header(token)
     rsa_key = {}
@@ -136,7 +127,7 @@ def verify_decode_jwt(token):
                 rsa_key,
                 algorithms=ALGORITHMS,
                 audience=API_AUDIENCE,
-                issuer="https://"+AUTH0_DOMAIN+"/"
+                issuer="https://" + AUTH0_DOMAIN + "/"
             )
             return payload
         except jwt.ExpiredSignatureError:
@@ -146,31 +137,29 @@ def verify_decode_jwt(token):
             raise AuthError({"code": "invalid_claims",
                              "description":
                              "incorrect claims,"
-                             "please check the audience and issuer"}, 401)
+                             "check the audience and the issuer"}, 401)
         except Exception:
             raise AuthError({"code": "invalid_header",
                              "description":
                              "Unable to parse authentication"
-                             " token."}, 401)
+                             " token."}, 400)
 
         _request_ctx_stack.top.current_user = payload
     raise AuthError({"code": "invalid_header",
-                     "description": "Unable to find appropriate key"}, 401)
-
-
-'''
-@TODO implement @requires_auth(permission) decorator method
-    @INPUTS
-        permission: string permission (i.e. 'post:drink')
-
-    it should use the get_token_auth_header method to get the token
-    it should use the verify_decode_jwt method to decode the jwt
-    it should use the check_permissions method validate claims and check the requested permission
-    return the decorator which passes the decoded payload to the decorated method
-'''
+                     "description": "Unable to find appropriate key"}, 400)
 
 
 def requires_auth(permission=''):
+    '''
+    @requires_auth(permission) decorator method
+    @INPUTS
+        permission: string permission (i.e. 'post:drink')
+
+    it use the get_token_auth_header method to get the token
+    it use the verify_decode_jwt method to decode the jwt
+    it use the check_permissions method validate claims and check the requested permission
+    return the decorator which passes the decoded payload to the decorated method
+    '''
     def requires_auth_decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
@@ -178,6 +167,5 @@ def requires_auth(permission=''):
             payload = verify_decode_jwt(token)
             check_permissions(permission, payload)
             return f(payload, *args, **kwargs)
-
         return wrapper
     return requires_auth_decorator
