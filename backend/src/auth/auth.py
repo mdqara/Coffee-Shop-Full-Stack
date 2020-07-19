@@ -157,6 +157,7 @@ def verify_decode_jwt(token):
     raise AuthError({"code": "invalid_header",
                      "description": "Unable to find appropriate key"}, 401)
 
+
 '''
 @TODO implement @requires_auth(permission) decorator method
     @INPUTS

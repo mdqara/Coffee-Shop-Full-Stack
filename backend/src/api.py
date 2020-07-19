@@ -63,13 +63,13 @@ def get_drinks_detail(*args, **kwargs):
 
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
-def post_drink():
+def post_drink(*args, **kwargs):
     '''
     POST /drinks
         it should create a new row in the drinks table
         it should require the 'post:drinks' permission
         it should contain the drink.long() data representation
-    returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
+        returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
         or appropriate status code indicating reason for failure
     '''
     try:
@@ -90,7 +90,7 @@ def post_drink():
 
 @app.route('/drinks/<int:id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
-def patch_drinks(*args, **kwargs):
+def patch_drinks(payload, id):
     '''
    PATCH /drinks/<id>
        where <id> is the existing model id
@@ -101,15 +101,15 @@ def patch_drinks(*args, **kwargs):
    returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the updated drink
        or appropriate status code indicating reason for failure
    '''
-    drink_id = kwargs.get("drink_id", None)
-    if drink_id is None:
+    data = request.get_json()
+    if data is None:
         abort(400)
 
     data = request.get_json()
     title = data.get('title', None)
     recipe = data.get('recipe', None)
 
-    drink = Drink.query(drink_id)
+    drink = Drink.query.filter_by(id=id).one_or_none()
 
     if drink is None:
         abort(404)  # drink not found
